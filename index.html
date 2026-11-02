@@ -468,7 +468,6 @@ ${ask}
 제목: ${m.title}
 계정: @${m.uploader || "?"}
 원본: ${m.url}`;
-    const target = (store.get("claude_target") || CLAUDE_TARGET).replace(/\/$/, "");
     try { navigator.clipboard.writeText(msg); } catch (e) {}
     const custom = store.get("claude_target");
     if (custom) {
