@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>릴스 보관함</title>
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="릴스 보관함">
 <meta name="theme-color" content="#0e0e10">
 <link rel="manifest" href="manifest.json">
@@ -217,6 +215,12 @@ function renderSetup(msg) {
       <input id="tok" type="password" placeholder="github_pat_..." autocomplete="off" value="">
       <button class="btn" id="saveTok" style="width:100%">저장하고 시작하기</button>
       ${TOKEN ? `<button class="back" onclick="location.hash='#/'">← 보관함으로</button>
+      <div style="margin-top:28px;background:var(--card);border-radius:14px;padding:16px">
+        <b>📱 폰 연결하기</b>
+        <p style="margin:6px 0 12px">아이폰 카메라로 아래 QR을 찍으면 키 입력 없이 바로 연결돼요.</p>
+        <button class="btn ghost" id="qrBtn">QR 보기</button>
+        <div id="qr" style="margin-top:12px"></div>
+      </div>
       <p style="margin-top:28px"><button class="btn ghost" id="logout">이 기기에서 키 지우기</button></p>` : ""}
     </div>`;
   document.getElementById("saveTok").onclick = async () => {
@@ -230,6 +234,18 @@ function renderSetup(msg) {
       location.hash = "#/";
       route();
     } catch (e) { TOKEN = null; renderSetup(e.message); }
+  };
+  const qb = document.getElementById("qrBtn");
+  if (qb) qb.onclick = async () => {
+    const box = document.getElementById("qr");
+    if (!window.makeQRSvg) await new Promise((ok, no) => {
+      const sc = document.createElement("script");
+      sc.src = "qrcode.js"; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc);
+    }).catch(() => {});
+    if (!window.makeQRSvg) return toast("QR을 만들 수 없어요");
+    const svg = makeQRSvg(location.origin + location.pathname + "#k=" + encodeURIComponent(TOKEN), 5);
+    box.innerHTML = `<div style="background:#fff;padding:12px;border-radius:12px;display:inline-block">${svg}</div>
+      <p class="hint">⚠️ 이 QR엔 접속 키가 들어 있어요. 남에게 보여주거나 캡처해서 공유하지 마세요.</p>`;
   };
   const lo = document.getElementById("logout");
   if (lo) lo.onclick = () => { store.del("gh_token"); TOKEN = null; renderSetup(); };
@@ -457,6 +473,12 @@ async function route() {
     }
   }
 
+  if (location.hash.startsWith("#k=")) {
+    TOKEN = decodeURIComponent(location.hash.slice(3));
+    history.replaceState(null, "", location.pathname);
+    try { await api(`/repos/${OWNER}/${REPO}`); store.set("gh_token", TOKEN); toast("폰 연결 완료!"); }
+    catch (e) { TOKEN = store.get("gh_token"); toast("연결 실패: " + e.message); }
+  }
   if (!TOKEN) return renderSetup();
   const h = location.hash || "#/";
   if (h.startsWith("#/r/")) return renderDetail(decodeURIComponent(h.slice(4)));
