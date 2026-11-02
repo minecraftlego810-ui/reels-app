@@ -127,7 +127,7 @@
 
 <script>
 // ===================== 설정 =====================
-const APP_VERSION = "2026-11-02-a";
+const APP_VERSION = "2026-11-02-b";
 // 폰이 옛날 화면을 기억(캐시)하고 있으면 새 버전으로 자동 새로고침
 (async () => {
   try {
@@ -143,7 +143,8 @@ const OWNER = "minecraftlego810-ui";
 const REPO = "reels-archive";
 const WORKFLOW = "process.yml";
 // Claude 새 채팅 주소 (혼자앱 아카이브 프로젝트 링크를 받으면 여기에 넣음)
-const CLAUDE_TARGET = "https://claude.ai/new?project=01a15853-9652-71dd-97a6-67e1a512d7eb";
+const CLAUDE_PROJECT = "01a15853-9652-71dd-97a6-67e1a512d7eb"; // 혼자앱 아카이브
+const IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const DEFAULT_PROMPT = "이 릴스의 형식, 편집 방식(컷 속도·구성), 자막·폰트 스타일, 훅을 분석해줘. 혼자앱 아카이브 릴스에 참고할 점도 정리해줘.";
 
 // ===================== 저장소 (브라우저 저장) =====================
@@ -468,9 +469,18 @@ ${ask}
 계정: @${m.uploader || "?"}
 원본: ${m.url}`;
     const target = (store.get("claude_target") || CLAUDE_TARGET).replace(/\/$/, "");
-    // 혹시 미리 입력이 안 될 때를 대비해 복사도 해둠
     try { navigator.clipboard.writeText(msg); } catch (e) {}
-    this.href = target + (target.includes("?") ? "&" : "?") + "q=" + encodeURIComponent(msg);
+    const custom = store.get("claude_target");
+    if (custom) {
+      this.href = custom.replace(/\/$/, "") + (custom.includes("?") ? "&" : "?") + "q=" + encodeURIComponent(msg);
+    } else if (IS_PHONE) {
+      // 폰 Claude 앱: 프로젝트 화면을 열고, 메시지는 복사해둔 걸 붙여넣기
+      toast("요청 메시지 복사됨! 새 채팅 입력창에 붙여넣기 하세요", 5000);
+      this.href = `https://claude.ai/project/${CLAUDE_PROJECT}`;
+    } else {
+      // 컴퓨터 웹: 프로젝트 새 채팅 + 메시지 미리 입력
+      this.href = `https://claude.ai/new?project=${CLAUDE_PROJECT}&q=${encodeURIComponent(msg)}`;
+    }
   };
 
   document.getElementById("shareBtn").onclick = async () => {
