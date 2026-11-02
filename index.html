@@ -397,7 +397,7 @@ async function renderDetail(id) {
       <div class="sendbox">
         <b>Claude에게 보내기</b>
         <textarea id="prompt">${esc(store.get("prompt") || DEFAULT_PROMPT)}</textarea>
-        <button class="btn" id="claudeBtn" style="width:100%;margin-bottom:8px">✨ Claude 새 채팅으로 바로 보내기</button>
+        <a class="btn" id="claudeBtn" href="https://claude.ai/new" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px">✨ Claude 새 채팅으로 바로 보내기</a>
         <div class="row">
           <button class="btn ghost" id="shareBtn">📤 이미지 공유 (<span id="selCount">0</span>장)</button>
           <button class="btn ghost" id="copyBtn">텍스트 복사</button>
@@ -441,7 +441,8 @@ async function renderDetail(id) {
     catch (e) { toast("복사가 안 돼요"); }
   };
 
-  document.getElementById("claudeBtn").onclick = () => {
+  // 진짜 링크(<a>)를 누르게 해야 아이폰에서 Claude 앱으로 열림 (유니버설 링크)
+  document.getElementById("claudeBtn").onclick = function () {
     const ask = document.getElementById("prompt").value.trim();
     const msg = `[릴스 보관함 분석 요청]
 ${ask}
@@ -455,7 +456,7 @@ ${ask}
 계정: @${m.uploader || "?"}
 원본: ${m.url}`;
     const target = (store.get("claude_target") || CLAUDE_TARGET).replace(/\/$/, "");
-    location.href = target + (target.includes("?") ? "&" : "?") + "q=" + encodeURIComponent(msg);
+    this.href = target + (target.includes("?") ? "&" : "?") + "q=" + encodeURIComponent(msg);
   };
 
   document.getElementById("shareBtn").onclick = async () => {
