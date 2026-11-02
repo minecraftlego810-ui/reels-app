@@ -131,7 +131,7 @@ const OWNER = "minecraftlego810-ui";
 const REPO = "reels-archive";
 const WORKFLOW = "process.yml";
 // Claude 새 채팅 주소 (혼자앱 아카이브 프로젝트 링크를 받으면 여기에 넣음)
-const CLAUDE_TARGET = "https://claude.ai/project/01a15853-9652-71dd-97a6-67e1a512d7eb";
+const CLAUDE_TARGET = "https://claude.ai/new?project=01a15853-9652-71dd-97a6-67e1a512d7eb";
 const DEFAULT_PROMPT = "이 릴스의 형식, 편집 방식(컷 속도·구성), 자막·폰트 스타일, 훅을 분석해줘. 혼자앱 아카이브 릴스에 참고할 점도 정리해줘.";
 
 // ===================== 저장소 (브라우저 저장) =====================
@@ -397,7 +397,7 @@ async function renderDetail(id) {
       <div class="sendbox">
         <b>Claude에게 보내기</b>
         <textarea id="prompt">${esc(store.get("prompt") || DEFAULT_PROMPT)}</textarea>
-        <a class="btn" id="claudeBtn" href="https://claude.ai/new" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px">✨ Claude 프로젝트로 보내기 (복사 + 열기)</a>
+        <a class="btn" id="claudeBtn" href="https://claude.ai/new" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px">✨ Claude 프로젝트로 보내기</a>
         <div class="row">
           <button class="btn ghost" id="shareBtn">📤 이미지 공유 (<span id="selCount">0</span>장)</button>
           <button class="btn ghost" id="copyBtn">텍스트 복사</button>
@@ -456,9 +456,8 @@ ${ask}
 계정: @${m.uploader || "?"}
 원본: ${m.url}`;
     const target = (store.get("claude_target") || CLAUDE_TARGET).replace(/\/$/, "");
-    // 프로젝트·앱에선 미리 입력이 안 돼서, 메시지를 복사해두고 프로젝트를 엶
+    // 혹시 미리 입력이 안 될 때를 대비해 복사도 해둠
     try { navigator.clipboard.writeText(msg); } catch (e) {}
-    toast("요청 메시지 복사됨! Claude 입력창에 붙여넣기 하세요", 5000);
     this.href = target + (target.includes("?") ? "&" : "?") + "q=" + encodeURIComponent(msg);
   };
 
