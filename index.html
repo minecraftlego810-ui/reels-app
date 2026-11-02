@@ -130,6 +130,8 @@
 const OWNER = "minecraftlego810-ui";
 const REPO = "reels-archive";
 const WORKFLOW = "process.yml";
+// Claude 새 채팅 주소 (혼자앱 아카이브 프로젝트 링크를 받으면 여기에 넣음)
+const CLAUDE_TARGET = "https://claude.ai/new";
 const DEFAULT_PROMPT = "이 릴스의 형식, 편집 방식(컷 속도·구성), 자막·폰트 스타일, 훅을 분석해줘. 혼자앱 아카이브 릴스에 참고할 점도 정리해줘.";
 
 // ===================== 저장소 (브라우저 저장) =====================
@@ -216,6 +218,12 @@ function renderSetup(msg) {
       <button class="btn" id="saveTok" style="width:100%">저장하고 시작하기</button>
       ${TOKEN ? `<button class="back" onclick="location.hash='#/'">← 보관함으로</button>
       <div style="margin-top:28px;background:var(--card);border-radius:14px;padding:16px">
+        <b>✨ Claude 보낼 곳</b>
+        <p style="margin:6px 0 4px">비워두면 일반 새 채팅으로 가요. 프로젝트 링크를 넣으면 그 프로젝트로 보내요.</p>
+        <input id="ctarget" placeholder="https://claude.ai/project/..." value="${esc(store.get("claude_target") || "")}">
+        <button class="btn ghost" id="ctSave">저장</button>
+      </div>
+      <div style="margin-top:16px;background:var(--card);border-radius:14px;padding:16px">
         <b>📱 폰 연결하기</b>
         <p style="margin:6px 0 12px">아이폰 카메라로 아래 QR을 찍으면 키 입력 없이 바로 연결돼요.</p>
         <button class="btn ghost" id="qrBtn">QR 보기</button>
@@ -235,6 +243,8 @@ function renderSetup(msg) {
       route();
     } catch (e) { TOKEN = null; renderSetup(e.message); }
   };
+  const cs = document.getElementById("ctSave");
+  if (cs) cs.onclick = () => { const v = document.getElementById("ctarget").value.trim(); v ? store.set("claude_target", v) : store.del("claude_target"); toast("저장했어요"); };
   const qb = document.getElementById("qrBtn");
   if (qb) qb.onclick = async () => {
     const box = document.getElementById("qr");
@@ -387,8 +397,9 @@ async function renderDetail(id) {
       <div class="sendbox">
         <b>Claude에게 보내기</b>
         <textarea id="prompt">${esc(store.get("prompt") || DEFAULT_PROMPT)}</textarea>
+        <button class="btn" id="claudeBtn" style="width:100%;margin-bottom:8px">✨ Claude 새 채팅으로 바로 보내기</button>
         <div class="row">
-          <button class="btn" id="shareBtn">📤 보내기 (<span id="selCount">0</span>장)</button>
+          <button class="btn ghost" id="shareBtn">📤 이미지 공유 (<span id="selCount">0</span>장)</button>
           <button class="btn ghost" id="copyBtn">텍스트 복사</button>
         </div>
         <div class="hint">누르면 분석 텍스트가 <b>자동 복사</b>되고, 체크한 이미지 공유창이 떠요.<br>① 공유창에서 <b>Claude</b> 선택 (안 보이면 앱 줄 끝 <b>더 보기</b>)<br>② Claude 입력창에 <b>붙여넣기</b> → 보내기<br>프로젝트 채팅으로 보내려면 공유창에서 <b>이미지 저장</b> → 프로젝트 채팅에서 사진 첨부 + 붙여넣기</div>
@@ -428,6 +439,23 @@ async function renderDetail(id) {
   document.getElementById("copyBtn").onclick = async () => {
     try { await navigator.clipboard.writeText(fullText()); toast("복사했어요. Claude 채팅에 붙여넣으세요"); }
     catch (e) { toast("복사가 안 돼요"); }
+  };
+
+  document.getElementById("claudeBtn").onclick = () => {
+    const ask = document.getElementById("prompt").value.trim();
+    const msg = `[릴스 보관함 분석 요청]
+${ask}
+
+자료 위치: GitHub 저장소 ${OWNER}/${REPO} 의 reels/${id}/ 폴더
+- summary.md (정보·컷 목록·대사)
+- hook_sheet.jpg (첫 3초), timeline_*.jpg (일정 간격 캡처), sheet_*.jpg (컷 콘티)
+저장소를 연결해서 이 파일들을 직접 열어보고 분석해줘.
+
+제목: ${m.title}
+계정: @${m.uploader || "?"}
+원본: ${m.url}`;
+    const target = (store.get("claude_target") || CLAUDE_TARGET).replace(/\/$/, "");
+    location.href = target + (target.includes("?") ? "&" : "?") + "q=" + encodeURIComponent(msg);
   };
 
   document.getElementById("shareBtn").onclick = async () => {
