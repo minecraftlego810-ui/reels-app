@@ -397,7 +397,7 @@ async function renderDetail(id) {
       <div class="sendbox">
         <b>Claude에게 보내기</b>
         <textarea id="prompt">${esc(store.get("prompt") || DEFAULT_PROMPT)}</textarea>
-        <a class="btn" id="claudeBtn" href="https://claude.ai/new" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px">✨ Claude 새 채팅으로 바로 보내기</a>
+        <a class="btn" id="claudeBtn" href="https://claude.ai/new" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px">✨ Claude 프로젝트로 보내기 (복사 + 열기)</a>
         <div class="row">
           <button class="btn ghost" id="shareBtn">📤 이미지 공유 (<span id="selCount">0</span>장)</button>
           <button class="btn ghost" id="copyBtn">텍스트 복사</button>
@@ -456,6 +456,9 @@ ${ask}
 계정: @${m.uploader || "?"}
 원본: ${m.url}`;
     const target = (store.get("claude_target") || CLAUDE_TARGET).replace(/\/$/, "");
+    // 프로젝트·앱에선 미리 입력이 안 돼서, 메시지를 복사해두고 프로젝트를 엶
+    try { navigator.clipboard.writeText(msg); } catch (e) {}
+    toast("요청 메시지 복사됨! Claude 입력창에 붙여넣기 하세요", 5000);
     this.href = target + (target.includes("?") ? "&" : "?") + "q=" + encodeURIComponent(msg);
   };
 
