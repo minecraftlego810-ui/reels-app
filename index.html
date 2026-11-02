@@ -391,7 +391,8 @@ async function renderDetail(id) {
           <button class="btn" id="shareBtn">📤 보내기 (<span id="selCount">0</span>장)</button>
           <button class="btn ghost" id="copyBtn">텍스트 복사</button>
         </div>
-        <div class="hint">아래에서 체크한 이미지 + 분석 정보(요약.txt)가 함께 공유돼요. 공유창에서 <b>Claude</b>를 고르세요.</div>
+        <button class="btn ghost" id="saveBtn" style="width:100%;margin-top:8px">🖼 사진에 저장 + 텍스트 복사 (프로젝트 채팅용)</button>
+        <div class="hint"><b>보내기</b>: 체크한 이미지 + 요약.txt를 Claude 앱으로 공유해요.<br><b>사진에 저장</b>: 텍스트가 복사되고 이미지는 사진 앱에 저장돼요. 공유창에서 <b>이미지 저장</b>을 누른 뒤, Claude 프로젝트 채팅에서 사진 첨부 + 붙여넣기 하세요.</div>
       </div>
 
       <div class="sec">이미지 (눌러서 크게 보기)</div>
@@ -428,6 +429,24 @@ async function renderDetail(id) {
   document.getElementById("copyBtn").onclick = async () => {
     try { await navigator.clipboard.writeText(fullText()); toast("복사했어요. Claude 채팅에 붙여넣으세요"); }
     catch (e) { toast("복사가 안 돼요"); }
+  };
+
+  document.getElementById("saveBtn").onclick = async () => {
+    const chosen = boxes.filter(b => b.checked).map(b => sheets[+b.dataset.i]);
+    const files = [];
+    for (const s of chosen) {
+      const p = base + s.p;
+      if (!blobCache.has(p)) continue;
+      files.push(new File([await blobCache.get(p)], `${s.name.replace(/[\/\s]+/g, "_")}.jpg`, { type: "image/jpeg" }));
+    }
+    navigator.clipboard.writeText(fullText()).catch(() => {});
+    if (files.length && navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share({ files }); toast("텍스트도 복사돼 있어요. Claude 채팅에 붙여넣으세요", 4000); }
+      catch (e) { if (e.name !== "AbortError") toast("저장 실패: " + e.message); }
+    } else {
+      for (const f of files) { const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }
+      toast("이미지를 내려받고 텍스트를 복사했어요", 4000);
+    }
   };
 
   document.getElementById("shareBtn").onclick = async () => {
