@@ -127,6 +127,18 @@
 
 <script>
 // ===================== 설정 =====================
+const APP_VERSION = "2026-11-02-a";
+// 폰이 옛날 화면을 기억(캐시)하고 있으면 새 버전으로 자동 새로고침
+(async () => {
+  try {
+    const html = await (await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" })).text();
+    const m = html.match(/APP_VERSION = "([^"]+)"/);
+    if (m && m[1] !== APP_VERSION) {
+      const u = new URL(location.href); u.searchParams.set("v", m[1]);
+      location.replace(u.toString());
+    }
+  } catch (e) {}
+})();
 const OWNER = "minecraftlego810-ui";
 const REPO = "reels-archive";
 const WORKFLOW = "process.yml";
