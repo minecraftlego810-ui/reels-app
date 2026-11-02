@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>릴스 보관함</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="릴스 보관함">
+<meta name="theme-color" content="#0e0e10">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<style>
+  :root {
+    --bg: #0e0e10; --card: #1a1a1e; --line: #2a2a30; --text: #f2f2f5; --sub: #9a9aa5;
+    --accent: #ffd60a; --accent-ink: #1a1500; --ok: #34c759; --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; }
+  body { padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px); }
+  a { color: var(--accent); }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+
+  header { position: sticky; top: 0; z-index: 10; background: rgba(14,14,16,.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line); }
+  header .wrap { display: flex; align-items: center; gap: 10px; height: 56px; }
+  header h1 { font-size: 19px; margin: 0; flex: 1; font-weight: 800; letter-spacing: -.3px; }
+  header h1 span { color: var(--accent); }
+  .icon-btn { background: var(--card); width: 40px; height: 40px; border-radius: 12px; font-size: 18px;
+    display: grid; place-items: center; }
+
+  .add { display: flex; gap: 8px; margin: 16px 0 8px; }
+  .add input { flex: 1; min-width: 0; background: var(--card); border: 1px solid var(--line); color: var(--text);
+    border-radius: 12px; padding: 12px 14px; font-size: 16px; }
+  .btn { background: var(--accent); color: var(--accent-ink); font-weight: 700; border-radius: 12px; padding: 12px 16px;
+    white-space: nowrap; }
+  .btn.ghost { background: var(--card); color: var(--text); border: 1px solid var(--line); font-weight: 600; }
+  .btn:disabled { opacity: .5; }
+
+  .status { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px;
+    margin: 8px 0; font-size: 14px; color: var(--sub); }
+  .status b { color: var(--text); }
+  .status .row { display: flex; gap: 8px; align-items: center; padding: 3px 0; }
+  .status .row span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; animation: pulse 1.2s infinite; }
+  .dot.fail { background: var(--err); animation: none; }
+  @keyframes pulse { 50% { opacity: .3; } }
+
+  .search { width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--line); color: var(--text);
+    padding: 10px 2px; font-size: 15px; margin: 8px 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .item { background: var(--card); border-radius: 14px; overflow: hidden; text-align: left; padding: 0; display: block;
+    text-decoration: none; color: inherit; }
+  .thumb { aspect-ratio: 9/16; background: #222 center/cover no-repeat; position: relative; }
+  .thumb .badge { position: absolute; left: 8px; bottom: 8px; background: rgba(0,0,0,.7); font-size: 12px; padding: 2px 7px;
+    border-radius: 6px; }
+  .item .meta { padding: 8px 10px 10px; }
+  .item .t { font-size: 14px; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden; }
+  .item .u { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .empty { text-align: center; color: var(--sub); padding: 60px 0; }
+
+  .detail h2 { font-size: 21px; margin: 18px 0 4px; line-height: 1.35; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; }
+  .chip { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; color: var(--sub); }
+  .chip b { color: var(--text); font-weight: 600; }
+  .sec { margin: 22px 0 8px; font-size: 13px; color: var(--sub); font-weight: 700; letter-spacing: .3px; }
+  .caption { white-space: pre-wrap; background: var(--card); border-radius: 12px; padding: 12px 14px; font-size: 14px; }
+
+  .sendbox { background: linear-gradient(180deg, #24210f, #1a1a1e); border: 1px solid #4a4214; border-radius: 16px;
+    padding: 14px; margin: 18px 0; }
+  .sendbox textarea { width: 100%; min-height: 64px; resize: vertical; background: rgba(0,0,0,.35); color: var(--text);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 15px; margin: 8px 0 10px; }
+  .sendbox .row { display: flex; gap: 8px; }
+  .sendbox .row .btn { flex: 1; }
+  .hint { font-size: 12px; color: var(--sub); margin-top: 8px; }
+
+  .sheets { display: grid; gap: 12px; }
+  .sheet { position: relative; background: var(--card); border-radius: 12px; overflow: hidden; }
+  .sheet img { width: 100%; display: block; min-height: 120px; background: #222; }
+  .sheet label { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.75); border-radius: 999px;
+    padding: 6px 12px 6px 8px; font-size: 13px; display: flex; gap: 6px; align-items: center; }
+  .sheet input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+  .sheet .name { position: absolute; left: 8px; bottom: 8px; background: rgba(0,0,0,.75); border-radius: 8px;
+    padding: 4px 8px; font-size: 12px; }
+
+  .strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
+  .strip figure { margin: 0; flex: none; width: 108px; scroll-snap-align: start; }
+  .strip img { width: 108px; aspect-ratio: 9/16; object-fit: cover; border-radius: 8px; background: #222; display: block; }
+  .strip figcaption { font-size: 11px; color: var(--sub); text-align: center; margin-top: 3px; }
+
+  details { background: var(--card); border-radius: 12px; padding: 4px 14px; }
+  summary { padding: 10px 0; cursor: pointer; font-weight: 600; }
+  .tr { font-size: 14px; padding-bottom: 10px; }
+  .tr div { padding: 3px 0; }
+  .tr span { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 8px; font-size: 12px; }
+
+  .viewer { position: fixed; inset: 0; background: rgba(0,0,0,.95); z-index: 50; overflow: auto; display: none; }
+  .viewer img { width: 100%; display: block; }
+  .viewer button { position: fixed; top: calc(env(safe-area-inset-top) + 10px); right: 12px; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 24px); transform: translateX(-50%);
+    background: #fff; color: #111; padding: 10px 16px; border-radius: 12px; font-weight: 600; font-size: 14px;
+    z-index: 60; opacity: 0; transition: .25s; pointer-events: none; max-width: 90vw; text-align: center; }
+  .toast.on { opacity: 1; }
+
+  .setup { padding: 28px 0; }
+  .setup h2 { margin: 0 0 6px; }
+  .setup p { color: var(--sub); font-size: 14px; }
+  .setup input { width: 100%; background: var(--card); border: 1px solid var(--line); color: var(--text); border-radius: 12px;
+    padding: 12px 14px; font-size: 15px; margin: 8px 0 12px; }
+  .back { background: none; color: var(--sub); padding: 14px 0 0; font-size: 15px; }
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>릴스 <span>보관함</span></h1>
+  <button class="icon-btn" id="refreshBtn" title="새로고침">↻</button>
+  <button class="icon-btn" id="settingsBtn" title="설정">⚙︎</button>
+</div></header>
+
+<main class="wrap" id="app"></main>
+
+<div class="viewer" id="viewer"><button class="icon-btn" onclick="closeViewer()">✕</button><img id="viewerImg" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== 설정 =====================
+const OWNER = "minecraftlego810-ui";
+const REPO = "reels-archive";
+const WORKFLOW = "process.yml";
+const DEFAULT_PROMPT = "이 릴스의 형식, 편집 방식(컷 속도·구성), 자막·폰트 스타일, 훅을 분석해줘. 혼자앱 아카이브 릴스에 참고할 점도 정리해줘.";
+
+// ===================== 저장소 (브라우저 저장) =====================
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+let TOKEN = store.get("gh_token");
+
+// ===================== GitHub 통신 =====================
+async function api(path, opts = {}) {
+  const res = await fetch("https://api.github.com" + path, {
+    ...opts,
+    cache: "no-store",
+    headers: {
+      "Authorization": "Bearer " + TOKEN,
+      "Accept": opts.raw ? "application/vnd.github.raw" : "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(opts.body ? { "Content-Type": "application/json" } : {}),
+    },
+  });
+  if (res.status === 401) throw new Error("접속 키가 틀렸거나 만료됐어요. 설정에서 다시 넣어주세요.");
+  if (!res.ok && res.status !== 204) throw new Error(`GitHub 오류 ${res.status}`);
+  return res;
+}
+const filePath = (p) => `/repos/${OWNER}/${REPO}/contents/${p.split("/").map(encodeURIComponent).join("/")}`;
+async function getText(p) { return (await api(filePath(p), { raw: true })).text(); }
+async function getJSON(p) { return JSON.parse(await getText(p)); }
+
+const blobCache = new Map();
+async function getBlob(p) {
+  if (!blobCache.has(p)) {
+    blobCache.set(p, api(filePath(p), { raw: true }).then(r => r.blob())
+      .catch(e => { blobCache.delete(p); throw e; }));
+  }
+  return blobCache.get(p);
+}
+const urlCache = new Map();
+async function getImgURL(p) {
+  if (!urlCache.has(p)) urlCache.set(p, URL.createObjectURL(await getBlob(p)));
+  return urlCache.get(p);
+}
+
+async function submitReel(url, note = "") {
+  await api(`/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
+    method: "POST",
+    body: JSON.stringify({ ref: "main", inputs: { url, note } }),
+  });
+}
+
+async function recentRuns() {
+  const r = await (await api(`/repos/${OWNER}/${REPO}/actions/runs?per_page=8`)).json();
+  return r.workflow_runs || [];
+}
+
+// ===================== 공통 =====================
+const $app = document.getElementById("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function toast(msg, ms = 2600) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("on");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), ms);
+}
+const fmtT = (s) => { const m = Math.floor(s / 60); return `${m}:${(s % 60).toFixed(1).padStart(4, "0")}`; };
+const cleanURL = (u) => { try { const x = new URL(u); return x.origin + x.pathname; } catch (e) { return u; } };
+const isInsta = (u) => /instagram\.com\/(?:[^/]+\/)?(reel|reels|p|tv)\//.test(u);
+
+function openViewer(src) {
+  document.getElementById("viewerImg").src = src;
+  document.getElementById("viewer").style.display = "block";
+}
+function closeViewer() { document.getElementById("viewer").style.display = "none"; }
+
+// ===================== 화면: 설정 =====================
+function renderSetup(msg) {
+  $app.innerHTML = `
+    <div class="setup">
+      <h2>접속 키 넣기</h2>
+      <p>이 기기에서 처음 한 번만 하면 돼요. GitHub에서 만든 접속 키(github_pat_로 시작)를 붙여넣어 주세요.
+      키는 이 기기 브라우저에만 저장돼요.</p>
+      ${msg ? `<p style="color:var(--err)">${esc(msg)}</p>` : ""}
+      <input id="tok" type="password" placeholder="github_pat_..." autocomplete="off" value="">
+      <button class="btn" id="saveTok" style="width:100%">저장하고 시작하기</button>
+      ${TOKEN ? `<button class="back" onclick="location.hash='#/'">← 보관함으로</button>
+      <p style="margin-top:28px"><button class="btn ghost" id="logout">이 기기에서 키 지우기</button></p>` : ""}
+    </div>`;
+  document.getElementById("saveTok").onclick = async () => {
+    const v = document.getElementById("tok").value.trim();
+    if (!v) return;
+    TOKEN = v;
+    try {
+      await api(`/repos/${OWNER}/${REPO}`);
+      store.set("gh_token", v);
+      toast("연결 완료!");
+      location.hash = "#/";
+      route();
+    } catch (e) { TOKEN = null; renderSetup(e.message); }
+  };
+  const lo = document.getElementById("logout");
+  if (lo) lo.onclick = () => { store.del("gh_token"); TOKEN = null; renderSetup(); };
+}
+
+// ===================== 화면: 보관함 =====================
+let indexData = [];
+let pollTimer = null;
+
+async function renderList() {
+  $app.innerHTML = `
+    <div class="add">
+      <input id="urlIn" type="url" inputmode="url" placeholder="인스타 릴스·게시물 링크 붙여넣기">
+      <button class="btn" id="addBtn">저장</button>
+    </div>
+    <div id="status"></div>
+    <input class="search" id="q" placeholder="🔍 제목·계정·캡션 검색">
+    <div class="grid" id="grid"><div class="empty">불러오는 중…</div></div>`;
+
+  document.getElementById("addBtn").onclick = () => addFromInput();
+  document.getElementById("urlIn").onkeydown = (e) => { if (e.key === "Enter") addFromInput(); };
+  document.getElementById("q").oninput = () => drawGrid();
+
+  try {
+    indexData = await getJSON("data/index.json");
+  } catch (e) {
+    indexData = [];
+  }
+  drawGrid();
+  checkRuns();
+}
+
+async function addFromInput() {
+  const inp = document.getElementById("urlIn");
+  const url = inp.value.trim();
+  if (!isInsta(url)) return toast("인스타 릴스·게시물 링크를 넣어주세요");
+  const b = document.getElementById("addBtn");
+  b.disabled = true;
+  try {
+    await submitReel(cleanURL(url));
+    inp.value = "";
+    toast("저장 시작! 1~3분 걸려요");
+    setTimeout(checkRuns, 4000);
+  } catch (e) { toast(e.message); }
+  b.disabled = false;
+}
+
+function drawGrid() {
+  const g = document.getElementById("grid");
+  if (!g) return;
+  const q = (document.getElementById("q")?.value || "").trim().toLowerCase();
+  const items = indexData.filter(x => !q || [x.title, x.uploader, x.note, (x.tags || []).join(" ")].join(" ").toLowerCase().includes(q));
+  if (!indexData.length) { g.innerHTML = `<div class="empty">아직 저장한 릴스가 없어요.<br>위에 링크를 붙여넣어 보세요.</div>`; return; }
+  if (!items.length) { g.innerHTML = `<div class="empty">검색 결과가 없어요</div>`; return; }
+  g.innerHTML = items.map(x => `
+    <a class="item" href="#/r/${encodeURIComponent(x.id)}">
+      <div class="thumb" data-src="reels/${esc(x.id)}/${esc(x.thumbnail)}">
+        <span class="badge">${x.kind === "video" ? `▶ ${Math.round(x.duration)}초${x.cut_count > 1 ? ` · ${x.cut_count}컷` : ""}` : `🖼 ${x.image_count}장`}</span>
+      </div>
+      <div class="meta"><div class="t">${esc(x.title)}</div><div class="u">@${esc(x.uploader || "?")} · ${esc((x.saved_at || "").slice(5, 10).replace("-", "/"))}</div></div>
+    </a>`).join("");
+  lazyThumbs();
+}
+
+function lazyThumbs() {
+  const io = new IntersectionObserver((ents) => {
+    ents.forEach(async (en) => {
+      if (!en.isIntersecting) return;
+      io.unobserve(en.target);
+      try { en.target.style.backgroundImage = `url(${await getImgURL(en.target.dataset.src)})`; } catch (e) {}
+    });
+  }, { rootMargin: "300px" });
+  document.querySelectorAll(".thumb[data-src]").forEach(el => io.observe(el));
+}
+
+async function checkRuns() {
+  clearTimeout(pollTimer);
+  const box = document.getElementById("status");
+  if (!box) return;
+  let runs = [];
+  try { runs = await recentRuns(); } catch (e) { return; }
+  const active = runs.filter(r => r.status !== "completed");
+  const failed = runs.filter(r => r.conclusion === "failure" && Date.now() - new Date(r.updated_at) < 6 * 3600e3);
+  const name = (r) => esc((r.display_title || "").replace(/^저장\s*/, ""));
+  let html = "";
+  if (active.length) html += `<div class="status"><b>처리 중 ${active.length}개</b>${active.map(r => `<div class="row"><span class="dot"></span><span>${name(r)}</span></div>`).join("")}</div>`;
+  if (failed.length) html += `<div class="status"><b>실패한 저장</b>${failed.map(r => `<div class="row"><span class="dot fail"></span><span>${name(r)}</span></div>`).join("")}<div class="hint">링크가 비공개 계정이거나 인스타가 잠깐 막았을 수 있어요. 다시 저장해 보세요.</div></div>`;
+  box.innerHTML = html;
+  if (active.length) {
+    box.dataset.wasActive = "1";
+    pollTimer = setTimeout(checkRuns, 10000);
+  } else if (box.dataset.wasActive) {
+    box.dataset.wasActive = "";
+    indexData = await getJSON("data/index.json").catch(() => indexData);
+    drawGrid();
+    toast("새 릴스 저장 완료!");
+  }
+}
+
+// ===================== 화면: 상세 =====================
+async function renderDetail(id) {
+  clearTimeout(pollTimer);
+  $app.innerHTML = `<button class="back" onclick="history.length > 1 ? history.back() : location.hash='#/'">← 보관함</button><div class="empty">불러오는 중…</div>`;
+  let m, summary;
+  try {
+    [m, summary] = await Promise.all([getJSON(`reels/${id}/meta.json`), getText(`reels/${id}/summary.md`)]);
+  } catch (e) {
+    $app.innerHTML += `<div class="empty">${esc(e.message)}</div>`; return;
+  }
+  const base = `reels/${id}/`;
+  const sheets = [];
+  if (m.kind === "video") {
+    sheets.push({ p: m.hook_sheet, name: "첫 3초", on: true });
+    (m.timeline_sheets || []).forEach((s, i, a) => sheets.push({ p: s, name: `타임라인 ${i + 1}/${a.length}`, on: true }));
+    (m.sheets || []).forEach((s, i, a) => sheets.push({ p: s, name: `컷 콘티 ${i + 1}/${a.length}`, on: (m.stats?.cut_count || 0) > 1 }));
+  } else {
+    (m.sheets || []).forEach(s => sheets.push({ p: s, name: "전체 보기", on: false }));
+    (m.images || []).forEach((s, i) => sheets.push({ p: s, name: `사진 ${i + 1}`, on: true }));
+  }
+
+  const chips = [];
+  if (m.kind === "video") {
+    chips.push(`<b>${m.video.duration.toFixed(0)}초</b>`);
+    if (m.stats.cut_count > 1) chips.push(`컷 <b>${m.stats.cut_count}</b>개`, `컷당 <b>${m.stats.avg_shot.toFixed(1)}</b>초`);
+    else chips.push(`컷 없이 한 화면으로 이어짐`);
+  }
+  if (m.like_count != null) chips.push(`♥ <b>${m.like_count.toLocaleString()}</b>`);
+  if (m.view_count != null) chips.push(`조회 <b>${m.view_count.toLocaleString()}</b>`);
+  if (m.track) chips.push(`♪ ${esc(m.track)}`);
+
+  const tr = m.transcript?.segments || [];
+  $app.innerHTML = `
+    <button class="back" onclick="history.length > 1 ? history.back() : location.hash='#/'">← 보관함</button>
+    <div class="detail">
+      <h2>${esc(m.title)}</h2>
+      <div style="color:var(--sub);font-size:14px">@${esc(m.uploader || "?")} · <a href="${esc(m.url)}" target="_blank" rel="noopener">원본 보기 ↗</a></div>
+      <div class="chips">${chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>
+
+      <div class="sendbox">
+        <b>Claude에게 보내기</b>
+        <textarea id="prompt">${esc(store.get("prompt") || DEFAULT_PROMPT)}</textarea>
+        <div class="row">
+          <button class="btn" id="shareBtn">📤 보내기 (<span id="selCount">0</span>장)</button>
+          <button class="btn ghost" id="copyBtn">텍스트 복사</button>
+        </div>
+        <div class="hint">아래에서 체크한 이미지 + 분석 정보(요약.txt)가 함께 공유돼요. 공유창에서 <b>Claude</b>를 고르세요.</div>
+      </div>
+
+      <div class="sec">이미지 (눌러서 크게 보기)</div>
+      <div class="sheets">${sheets.map((s, i) => `
+        <div class="sheet">
+          <img data-src="${esc(base + s.p)}" alt="" data-i="${i}">
+          <span class="name">${esc(s.name)}</span>
+          <label><input type="checkbox" data-i="${i}" ${s.on ? "checked" : ""}> 보내기</label>
+        </div>`).join("")}</div>
+
+      ${m.kind === "video" && m.shots?.length > 1 ? `
+        <div class="sec">컷별 장면 (${m.shots.length})</div>
+        <div class="strip">${m.shots.map(s => `<figure><img data-src="${esc(base + s.image)}" alt=""><figcaption>#${s.index} · ${s.length.toFixed(1)}s</figcaption></figure>`).join("")}</div>` : ""}
+
+      ${m.caption ? `<div class="sec">캡션</div><div class="caption">${esc(m.caption)}</div>` : ""}
+
+      ${tr.length ? `<div class="sec">대사</div>
+        <details><summary>대사 ${tr.length}줄 펼치기</summary>
+        <div class="tr">${tr.map(s => `<div><span>${fmtT(s.start)}</span>${esc(s.text)}</div>`).join("")}</div></details>` : ""}
+    </div>`;
+
+  // 이미지 불러오기 (보내기 전에 미리 받아둠 → 아이폰 공유가 바로 열림)
+  $app.querySelectorAll("img[data-src]").forEach(async (img) => {
+    try { img.src = await getImgURL(img.dataset.src); img.onclick = () => openViewer(img.src); } catch (e) {}
+  });
+
+  const boxes = [...$app.querySelectorAll(".sheet input[type=checkbox]")];
+  const upd = () => document.getElementById("selCount").textContent = boxes.filter(b => b.checked).length;
+  boxes.forEach(b => b.onchange = upd); upd();
+  document.getElementById("prompt").onchange = (e) => store.set("prompt", e.target.value);
+
+  const fullText = () => `${document.getElementById("prompt").value.trim()}\n\n---\n\n${summary}`;
+
+  document.getElementById("copyBtn").onclick = async () => {
+    try { await navigator.clipboard.writeText(fullText()); toast("복사했어요. Claude 채팅에 붙여넣으세요"); }
+    catch (e) { toast("복사가 안 돼요"); }
+  };
+
+  document.getElementById("shareBtn").onclick = async () => {
+    const chosen = boxes.filter(b => b.checked).map(b => sheets[+b.dataset.i]);
+    const files = [];
+    for (const s of chosen) {
+      const p = base + s.p;
+      if (!blobCache.has(p)) continue;
+      const blob = await blobCache.get(p);
+      files.push(new File([blob], `${s.name.replace(/[\/\s]+/g, "_")}.jpg`, { type: "image/jpeg" }));
+    }
+    files.push(new File([fullText()], "요약.txt", { type: "text/plain" }));
+    const data = { files, title: m.title, text: document.getElementById("prompt").value.trim() };
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share(data); }
+      catch (e) { if (e.name !== "AbortError") toast("공유 실패: " + e.message); }
+    } else {
+      // 컴퓨터 등 파일 공유가 안 되는 곳: 이미지 내려받기 + 텍스트 복사
+      for (const f of files) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(f); a.download = f.name; a.click();
+      }
+      try { await navigator.clipboard.writeText(fullText()); } catch (e) {}
+      toast("이미지를 내려받고 텍스트를 복사했어요. Claude 채팅에 첨부·붙여넣기 하세요", 4500);
+    }
+  };
+}
+
+// ===================== 길 안내 =====================
+async function route() {
+  // 단축어로 열렸을 때: ?add=링크 → 바로 저장
+  const params = new URLSearchParams(location.search);
+  const add = params.get("add");
+  if (add) {
+    history.replaceState(null, "", location.pathname + location.hash);
+    if (TOKEN) {
+      const m = add.match(/https?:\/\/\S*instagram\.com\S*/);
+      const url = m ? cleanURL(m[0]) : "";
+      if (url && isInsta(url)) {
+        try { await submitReel(url); toast("저장 시작! 1~3분 걸려요", 3500); }
+        catch (e) { toast(e.message); }
+      } else toast("인스타 링크를 못 찾았어요");
+    }
+  }
+
+  if (!TOKEN) return renderSetup();
+  const h = location.hash || "#/";
+  if (h.startsWith("#/r/")) return renderDetail(decodeURIComponent(h.slice(4)));
+  if (h === "#/settings") return renderSetup();
+  return renderList();
+}
+
+window.addEventListener("hashchange", route);
+document.getElementById("settingsBtn").onclick = () => { location.hash = "#/settings"; };
+document.getElementById("refreshBtn").onclick = () => { if (!location.hash.startsWith("#/r/")) renderList(); else route(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeViewer(); });
+route();
+</script>
+</body>
+</html>
