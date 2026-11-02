@@ -127,7 +127,7 @@
 
 <script>
 // ===================== 설정 =====================
-const APP_VERSION = "2026-11-02-b";
+const APP_VERSION = "2026-11-02-c";
 // 폰이 옛날 화면을 기억(캐시)하고 있으면 새 버전으로 자동 새로고침
 (async () => {
   try {
@@ -145,7 +145,19 @@ const WORKFLOW = "process.yml";
 // Claude 새 채팅 주소 (혼자앱 아카이브 프로젝트 링크를 받으면 여기에 넣음)
 const CLAUDE_PROJECT = "01a15853-9652-71dd-97a6-67e1a512d7eb"; // 혼자앱 아카이브
 const IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-const DEFAULT_PROMPT = "이 릴스의 형식, 편집 방식(컷 속도·구성), 자막·폰트 스타일, 훅을 분석해줘. 혼자앱 아카이브 릴스에 참고할 점도 정리해줘.";
+const PROMPTS = {
+  format: {
+    label: "🎬 형식 분석",
+    ask: "이 영상의 **형식**을 분석해줘: 길이·컷 속도·구성 흐름, 화면 구성(얼굴/화면녹화/애니메이션 등), 자막·폰트 스타일(위치, 크기, 색, 강조 방식), 첫 3초 훅, 음악·리듬, 마무리 방식. 마지막에 혼자앱 아카이브 릴스에 그대로 가져다 쓸 수 있는 포맷 포인트를 정리해줘.",
+    files: "hook_sheet.jpg (첫 3초), timeline_*.jpg (일정 간격 캡처), sheet_*.jpg (컷 콘티) 이미지를 꼭 직접 열어보고, summary.md의 컷 목록도 참고해줘.",
+  },
+  content: {
+    label: "📝 내용 분석",
+    ask: "이 영상의 **내용**을 분석해줘: 핵심 내용 요약, 주요 포인트와 정보, 전달하려는 메시지와 타깃, 반응이 좋을 만한 이유. 마지막에 혼자앱 아카이브나 내 앱 아이디어에 활용할 만한 점을 정리해줘.",
+    files: "summary.md의 대사·캡션을 중심으로 보고, 필요하면 timeline_*.jpg 이미지로 화면 내용도 확인해줘.",
+  },
+};
+const DEFAULT_PROMPT = PROMPTS.format.ask;
 
 // ===================== 저장소 (브라우저 저장) =====================
 const store = {
@@ -409,8 +421,11 @@ async function renderDetail(id) {
 
       <div class="sendbox">
         <b>Claude에게 보내기</b>
-        <textarea id="prompt">${esc(store.get("prompt") || DEFAULT_PROMPT)}</textarea>
-        <a class="btn" id="claudeBtn" href="https://claude.ai/new" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px">✨ Claude 프로젝트로 보내기</a>
+        <textarea id="prompt" placeholder="추가로 물어볼 게 있으면 적기 (선택)">${esc(store.get("extra") || "")}</textarea>
+        <div class="row" style="margin-bottom:8px">
+          <a class="btn claudeBtn" data-mode="format" href="https://claude.ai/new" style="flex:1;text-align:center;text-decoration:none">${PROMPTS.format.label}</a>
+          <a class="btn claudeBtn" data-mode="content" href="https://claude.ai/new" style="flex:1;text-align:center;text-decoration:none">${PROMPTS.content.label}</a>
+        </div>
         <div class="row">
           <button class="btn ghost" id="shareBtn">📤 이미지 공유 (<span id="selCount">0</span>장)</button>
           <button class="btn ghost" id="copyBtn">텍스트 복사</button>
@@ -445,9 +460,9 @@ async function renderDetail(id) {
   const boxes = [...$app.querySelectorAll(".sheet input[type=checkbox]")];
   const upd = () => document.getElementById("selCount").textContent = boxes.filter(b => b.checked).length;
   boxes.forEach(b => b.onchange = upd); upd();
-  document.getElementById("prompt").onchange = (e) => store.set("prompt", e.target.value);
+  document.getElementById("prompt").onchange = (e) => store.set("extra", e.target.value);
 
-  const fullText = () => `${document.getElementById("prompt").value.trim()}\n\n---\n\n${summary}`;
+  const fullText = () => `${PROMPTS.format.ask}${document.getElementById("prompt").value.trim() ? "\n추가 요청: " + document.getElementById("prompt").value.trim() : ""}\n\n---\n\n${summary}`;
 
   document.getElementById("copyBtn").onclick = async () => {
     try { await navigator.clipboard.writeText(fullText()); toast("복사했어요. Claude 채팅에 붙여넣으세요"); }
@@ -455,15 +470,14 @@ async function renderDetail(id) {
   };
 
   // 진짜 링크(<a>)를 누르게 해야 아이폰에서 Claude 앱으로 열림 (유니버설 링크)
-  document.getElementById("claudeBtn").onclick = function () {
-    const ask = document.getElementById("prompt").value.trim();
-    const msg = `[릴스 보관함 분석 요청]
-${ask}
+  $app.querySelectorAll(".claudeBtn").forEach(btn => btn.onclick = function () {
+    const P = PROMPTS[this.dataset.mode];
+    const extra = document.getElementById("prompt").value.trim();
+    const msg = `[릴스 보관함 · ${P.label.slice(2).trim()} 요청]
+${P.ask}${extra ? "\n추가 요청: " + extra : ""}
 
 자료 위치: GitHub 저장소 ${OWNER}/${REPO} 의 reels/${id}/ 폴더
-- summary.md (정보·컷 목록·대사)
-- hook_sheet.jpg (첫 3초), timeline_*.jpg (일정 간격 캡처), sheet_*.jpg (컷 콘티)
-저장소를 연결해서 이 파일들을 직접 열어보고 분석해줘.
+저장소를 연결해서 파일을 직접 열어봐줘. ${P.files}
 
 제목: ${m.title}
 계정: @${m.uploader || "?"}
@@ -480,7 +494,7 @@ ${ask}
       // 컴퓨터 웹: 프로젝트 새 채팅 + 메시지 미리 입력
       this.href = `https://claude.ai/new?project=${CLAUDE_PROJECT}&q=${encodeURIComponent(msg)}`;
     }
-  };
+  });
 
   document.getElementById("shareBtn").onclick = async () => {
     navigator.clipboard.writeText(fullText()).catch(() => {});
