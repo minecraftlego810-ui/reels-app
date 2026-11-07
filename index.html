@@ -127,7 +127,7 @@
 
 <script>
 // ===================== 설정 =====================
-const APP_VERSION = "2026-11-02-c";
+const APP_VERSION = "2026-11-07-a";
 // 폰이 옛날 화면을 기억(캐시)하고 있으면 새 버전으로 자동 새로고침
 (async () => {
   try {
@@ -332,7 +332,7 @@ function drawGrid() {
   const g = document.getElementById("grid");
   if (!g) return;
   const q = (document.getElementById("q")?.value || "").trim().toLowerCase();
-  const items = indexData.filter(x => !q || [x.title, x.uploader, x.note, (x.tags || []).join(" ")].join(" ").toLowerCase().includes(q));
+  const items = indexData.filter(x => !q || [x.no ? x.no + "번" : "", x.title, x.uploader, x.note, (x.tags || []).join(" ")].join(" ").toLowerCase().includes(q));
   if (!indexData.length) { g.innerHTML = `<div class="empty">아직 저장한 릴스가 없어요.<br>위에 링크를 붙여넣어 보세요.</div>`; return; }
   if (!items.length) { g.innerHTML = `<div class="empty">검색 결과가 없어요</div>`; return; }
   g.innerHTML = items.map(x => `
@@ -340,7 +340,7 @@ function drawGrid() {
       <div class="thumb" data-src="reels/${esc(x.id)}/${esc(x.thumbnail)}">
         <span class="badge">${x.kind === "video" ? `▶ ${Math.round(x.duration)}초${x.cut_count > 1 ? ` · ${x.cut_count}컷` : ""}` : `🖼 ${x.image_count}장`}</span>
       </div>
-      <div class="meta"><div class="t">${esc(x.title)}</div><div class="u">@${esc(x.uploader || "?")} · ${esc((x.saved_at || "").slice(5, 10).replace("-", "/"))}</div></div>
+      <div class="meta"><div class="t">${x.no ? `<span style="color:var(--accent)">${x.no}번</span> ` : ""}${esc(x.title)}</div><div class="u">@${esc(x.uploader || "?")} · ${esc((x.saved_at || "").slice(5, 10).replace("-", "/"))}</div></div>
     </a>`).join("");
   lazyThumbs();
 }
@@ -415,7 +415,7 @@ async function renderDetail(id) {
   $app.innerHTML = `
     <button class="back" onclick="history.length > 1 ? history.back() : location.hash='#/'">← 보관함</button>
     <div class="detail">
-      <h2>${esc(m.title)}</h2>
+      <h2>${m.no ? `<span style="color:var(--accent)">${m.no}번</span> · ` : ""}${esc(m.title)}</h2>
       <div style="color:var(--sub);font-size:14px">@${esc(m.uploader || "?")} · <a href="${esc(m.url)}" target="_blank" rel="noopener">원본 보기 ↗</a></div>
       <div class="chips">${chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>
 
